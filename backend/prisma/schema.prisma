@@ -1,0 +1,156 @@
+// Prisma schema — mirrors database/schema.sql
+// Run `npx prisma db pull` against Supabase if you created tables via schema.sql directly,
+// or `npx prisma migrate dev` to let Prisma create them for you.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  student
+  admin
+}
+
+enum UnitType {
+  core
+  elective
+}
+
+enum SessionType {
+  LEC
+  LAB
+  TUT
+}
+
+enum DayOfWeek {
+  MON
+  TUE
+  WED
+  THUR
+  FRI
+  SAT
+}
+
+enum RegistrationStatus {
+  pending
+  approved
+  rejected
+  dropped
+  completed
+}
+
+model Department {
+  id        String   @id @default(uuid())
+  name      String
+  code      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  users User[]
+  units Unit[]
+
+  @@map("departments")
+}
+
+model User {
+  id                 String   @id @default(uuid())
+  role               UserRole @default(student)
+  email              String   @unique
+  passwordHash       String   @map("password_hash")
+  fullName           String   @map("full_name")
+  registrationNumber String?  @unique @map("registration_number")
+  course             String?
+  yearOfStudy        Int?     @map("year_of_study")
+  departmentId       String?  @map("department_id")
+  department         Department? @relation(fields: [departmentId], references: [id])
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  registrations Registration[]
+
+  @@map("users")
+}
+
+model Semester {
+  id                    String   @id @default(uuid())
+  name                   String
+  academicYear           String   @map("academic_year")
+  startDate              DateTime @map("start_date")
+  endDate                DateTime @map("end_date")
+  registrationOpen       Boolean  @default(false) @map("registration_open")
+  registrationDeadline   DateTime @map("registration_deadline")
+  createdAt              DateTime @default(now()) @map("created_at")
+
+  units         Unit[]
+  registrations Registration[]
+  notices       Notice[]
+
+  @@unique([name, academicYear])
+  @@map("semesters")
+}
+
+model Unit {
+  id           String   @id @default(uuid())
+  code         String
+  title        String
+  lecturer     String
+  departmentId String   @map("department_id")
+  department   Department @relation(fields: [departmentId], references: [id])
+  yearOfStudy  Int      @map("year_of_study")
+  unitType     UnitType @default(core) @map("unit_type")
+  capacity     Int      @default(110)
+  semesterId   String   @map("semester_id")
+  semester     Semester @relation(fields: [semesterId], references: [id])
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  schedules     UnitSchedule[]
+  registrations Registration[]
+
+  @@unique([code, semesterId])
+  @@map("units")
+}
+
+model UnitSchedule {
+  id          String      @id @default(uuid())
+  unitId      String      @map("unit_id")
+  unit        Unit        @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  sessionType SessionType @map("session_type")
+  day         DayOfWeek
+  startTime   DateTime    @map("start_time") @db.Time
+  endTime     DateTime    @map("end_time") @db.Time
+  venue       String?
+  isOnline    Boolean     @default(false) @map("is_online")
+
+  @@map("unit_schedules")
+}
+
+model Registration {
+  id           String              @id @default(uuid())
+  userId       String              @map("user_id")
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  unitId       String              @map("unit_id")
+  unit         Unit                @relation(fields: [unitId], references: [id], onDelete: Cascade)
+  semesterId   String              @map("semester_id")
+  semester     Semester            @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+  status       RegistrationStatus  @default(pending)
+  registeredAt DateTime            @default(now()) @map("registered_at")
+  decidedAt    DateTime?           @map("decided_at")
+
+  @@unique([userId, unitId, semesterId])
+  @@map("registrations")
+}
+
+model Notice {
+  id         String    @id @default(uuid())
+  title      String
+  body       String
+  postedBy   String    @map("posted_by")
+  semesterId String?   @map("semester_id")
+  semester   Semester? @relation(fields: [semesterId], references: [id])
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  @@map("notices")
+}
