@@ -26,11 +26,10 @@ export default function CatalogPage() {
     if (year) params.set("year", String(year));
     if (query) params.set("q", query);
 
-    const [catalog, deptRes, mine] = await Promise.all([
-      apiFetch<{ semester: Semester; units: Unit[] }>(`/api/units?${params.toString()}`),
-      apiFetch<{ departments: Department[] }>("/api/units/departments"),
-      apiFetch<{ registrations: { unitId: string; status: string }[] }>("/api/registrations/me"),
-    ]);
+    const catalog = await apiFetch<{ semester: Semester; units: Unit[] }>(`/api/units?${params.toString()}`);
+    const deptRes = await apiFetch<{ departments: Department[] }>("/api/units/departments");
+    const mine = await apiFetch<{ registrations: { unitId: string; status: string }[] }>("/api/registrations/me");
+    
     setSemester(catalog.semester);
     setUnits(catalog.units);
     setDepartments(deptRes.departments);
