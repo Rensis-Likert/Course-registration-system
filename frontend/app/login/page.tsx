@@ -31,7 +31,12 @@ export default function LoginPage() {
       });
 
       saveSession(data.token, data.user);
-      router.push("/dashboard");
+      // Route based on role
+      if (data.user.role === "admin") {
+        router.push("/1admin/dashboard");
+      } else {
+        router.push("/dashboard");
+      }
     } catch (err: any) {
       setError(err.message || "Could not sign in. Please try again.");
     } finally {
@@ -42,7 +47,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col lg:flex-row">
       {/* Left hero panel */}
-      <div className="flex flex-col justify-between bg-navy px-10 py-12 text-white lg:w-1/2">
+      <div className="flex flex-col justify-center gap-16 bg-navy px-10 py-12 text-white lg:w-1/2">
         <div>
           <div className="flex items-center gap-2 text-xl font-semibold">
             <span className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-500">🎓</span>
@@ -59,7 +64,7 @@ export default function LoginPage() {
             timetable for overlaps before you submit.
           </p>
 
-          <div className="mt-8 space-y-5">
+          <div className="mt-10 space-y-6">
             <Feature
               emoji="🗓️"
               title="Live timetable grid"
@@ -77,7 +82,6 @@ export default function LoginPage() {
             />
           </div>
         </div>
-        <div />
       </div>
 
       {/* Right form panel */}
@@ -185,12 +189,16 @@ export default function LoginPage() {
             <div className="h-px flex-1 bg-slate-200" />
           </div>
 
-          <p className="text-center text-sm text-slate-500">
-            New student?{" "}
-            <a href="/register" className="font-medium text-gold-dark hover:underline">
-              Create an account
-            </a>
-          </p>
+          {/* This section now only shows if the student tab is active */}
+          {tab === "student" && (
+            <p className="text-center text-sm text-slate-500">
+              New student?{" "}
+              <a href="/register" className="font-medium text-gold-dark hover:underline">
+                Create an account
+              </a>
+            </p>
+          )}
+          
           <p className="mt-2 text-center text-sm text-slate-500">
             Having problems signing in? Contact{" "}
             <a href="#" className="text-orange-600 hover:underline">
